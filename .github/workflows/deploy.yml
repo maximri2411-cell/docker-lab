@@ -72,6 +72,28 @@ jobs:
 
           echo "Target instances for deployment: $INSTANCE_IDS"
 
+          # Wait for target instances to register and show Online in Systems Manager (SSM)
+          echo "Waiting for target instances to register and show Online in Systems Manager..."
+          for i in $(seq 1 45); do
+            ALL_ONLINE=true
+            for INSTANCE_ID in $INSTANCE_IDS; do
+              PING_STATUS=$(aws ssm describe-instance-information \
+                --filters "Key=InstanceIds,Values=$INSTANCE_ID" \
+                --query "InstanceInformationList[0].PingStatus" \
+                --output text)
+              if [ "$PING_STATUS" != "Online" ]; then
+                echo "Instance $INSTANCE_ID is not online in SSM yet (status: $PING_STATUS). Waiting..."
+                ALL_ONLINE=false
+                break
+              fi
+            done
+            if [ "$ALL_ONLINE" = "true" ]; then
+              echo "All instances are online in Systems Manager!"
+              break
+            fi
+            sleep 10
+          done
+
           # 2. Trigger SSM Run Command on these instances
           COMMAND_ID=$(aws ssm send-command \
             --instance-ids $INSTANCE_IDS \
