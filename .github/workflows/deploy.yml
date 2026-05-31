@@ -53,7 +53,7 @@ jobs:
         run: |
           aws ssm put-parameter \
             --name /student-api/mongodb/uri \
-            --value "${{ secrets.MONGODB_URI }}" \
+            --value "${{ secrets.MONGO_URI }}" \
             --type SecureString \
             --overwrite
 
